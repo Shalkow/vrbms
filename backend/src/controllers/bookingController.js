@@ -31,7 +31,8 @@ exports.getQuote = async (req, res, next) => {
     let discountAmount = 0;
     let couponError = null;
     if (couponCode) {
-      const coupon = await Coupon.findOne({ where: { code: couponCode } });
+      const normalizedCouponCode = couponCode.trim().toUpperCase();
+      const coupon = await Coupon.findOne({ where: { code: normalizedCouponCode } });
       if (!coupon) {
         couponError = 'Invalid coupon code';
       } else {
@@ -86,7 +87,8 @@ exports.createBooking = async (req, res, next) => {
     let discountAmount = 0;
     let coupon = null;
     if (couponCode) {
-      coupon = await Coupon.findOne({ where: { code: couponCode } });
+      const normalizedCouponCode = couponCode.trim().toUpperCase();
+      coupon = await Coupon.findOne({ where: { code: normalizedCouponCode } });
       if (coupon) {
         const result = applyCoupon(coupon, baseAmount);
         if (result.error) return res.status(400).json({ message: result.error });

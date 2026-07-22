@@ -94,7 +94,10 @@ function calculatePrice(pricingRows, { pickupDateTime, returnDateTime, distanceK
  */
 function applyCoupon(coupon, baseAmount) {
   if (!coupon || !coupon.isActive) return { discountAmount: 0, error: 'Coupon is not active' };
-  if (coupon.expiryDate && new Date(coupon.expiryDate) < new Date()) {
+  // DATEONLY values are parsed at midnight. Compare calendar days so a coupon
+  // remains valid for the full expiry date, not only until 12:00 AM.
+  const today = new Date().toISOString().slice(0, 10);
+  if (coupon.expiryDate && String(coupon.expiryDate) < today) {
     return { discountAmount: 0, error: 'Coupon has expired' };
   }
   if (coupon.minBookingAmount && baseAmount < Number(coupon.minBookingAmount)) {
