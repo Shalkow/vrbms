@@ -1,13 +1,16 @@
 export function vehicleImageUrl(imageUrl, fallback) {
   if (!imageUrl) return fallback;
 
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const apiOrigin = new URL(apiBaseUrl).origin;
+
   try {
     const url = new URL(imageUrl);
-    // Uploaded vehicle images are served by the backend. Keep only the path so
-    // Vercel can proxy it to the correct API deployment in every environment.
-    if (url.pathname.startsWith('/uploads/')) return url.pathname;
+    // Old records can contain localhost or a previous Railway domain. Serve
+    // their upload path through the active API origin instead.
+    if (url.pathname.startsWith('/uploads/')) return `${apiOrigin}${url.pathname}`;
   } catch {
-    // Relative paths are already safe to use.
+    if (imageUrl.startsWith('/uploads/')) return `${apiOrigin}${imageUrl}`;
   }
 
   return imageUrl;
