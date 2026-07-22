@@ -22,7 +22,7 @@ const cmsRoutes = require('./routes/cmsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
-
+app.set('trust proxy', 1);
 // ---- Security & core middleware ----
 app.use(helmet());
 app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
