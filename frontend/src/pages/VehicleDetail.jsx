@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { vehicleImageUrl } from '../utils/vehicleImage';
 
 export default function VehicleDetail() {
   const { id } = useParams();
@@ -14,7 +15,7 @@ export default function VehicleDetail() {
   if (!vehicle) return <div className="container" style={{ padding: 40 }}>Loading...</div>;
 
   const price = vehicle.VehiclePricing?.[0]?.dailyRate;
-  const image = vehicle.VehicleImages?.[0]?.imageUrl || 'https://placehold.co/700x400?text=Vehicle';
+  const image = vehicleImageUrl(vehicle.VehicleImages?.[0]?.imageUrl, 'https://placehold.co/700x400?text=Vehicle');
   let features = [];
   try { features = JSON.parse(vehicle.features || '[]'); } catch { /* ignore */ }
 

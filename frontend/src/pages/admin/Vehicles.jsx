@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axios';
+import { vehicleImageUrl } from '../../utils/vehicleImage';
 
 const empty = { name: '', vehicleNumber: '', categoryId: '', locationId: '', fuelType: 'Petrol', transmission: 'Manual', seats: 4, dailyRate: 1500 };
 const placeholderImage = 'https://placehold.co/96x64?text=Vehicle';
@@ -70,7 +71,7 @@ export default function AdminVehicles() {
     });
     setEditingId(vehicle.id);
     setImageFile(null);
-    setImagePreview(primaryImage?.imageUrl || vehicle.thumbnail || '');
+    setImagePreview(vehicleImageUrl(primaryImage?.imageUrl || vehicle.thumbnail, ''));
     setError('');
     setShowForm(true);
   };
@@ -132,7 +133,7 @@ export default function AdminVehicles() {
 
       <div className="grid" style={{ gap: 8 }}>
         {vehicles.map((vehicle) => {
-          const image = vehicle.VehicleImages?.find((item) => item.isPrimary)?.imageUrl || vehicle.VehicleImages?.[0]?.imageUrl || vehicle.thumbnail || placeholderImage;
+          const image = vehicleImageUrl(vehicle.VehicleImages?.find((item) => item.isPrimary)?.imageUrl || vehicle.VehicleImages?.[0]?.imageUrl || vehicle.thumbnail, placeholderImage);
           const dailyRate = vehicle.VehiclePricing?.find((pricing) => pricing.pricingType === 'daily')?.dailyRate;
           return (
             <div key={vehicle.id} className="card flex-between">

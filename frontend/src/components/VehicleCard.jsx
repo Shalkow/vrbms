@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
+import { vehicleImageUrl } from '../utils/vehicleImage';
 
 export default function VehicleCard({ vehicle }) {
   const price = vehicle.VehiclePricing?.[0]?.dailyRate;
-  const image = vehicle.VehicleImages?.[0]?.imageUrl || 'https://placehold.co/400x260?text=Vehicle';
+  const image = vehicleImageUrl(vehicle.VehicleImages?.[0]?.imageUrl, 'https://placehold.co/400x260?text=Vehicle');
 
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

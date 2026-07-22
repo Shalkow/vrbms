@@ -112,7 +112,7 @@ exports.addImage = async (req, res, next) => {
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
     const imageUrl = req.file
-      ? `${req.protocol}://${req.get('host')}/uploads/vehicles/${req.file.filename}`
+      ? `/uploads/vehicles/${req.file.filename}`
       : req.body.imageUrl;
     if (!imageUrl) return res.status(400).json({ message: 'Select an image to upload' });
 
