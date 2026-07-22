@@ -1,20 +1,26 @@
 import { useEffect, useState } from 'react';
 import api from '../../api/axios';
 
-const empty = { code: '', discountType: 'percentage', discountValue: 10, minBookingAmount: 0, maxDiscount: '', usageLimit: '', expiryDate: '' };
+const empty = { code: '', discountType: 'percentage', discountValue: 10, minBookingAmount: 0, maxDiscount: '', expiryDate: '' };
 
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([]);
   const [form, setForm] = useState(empty);
+  const [error, setError] = useState('');
 
   const load = () => api.get('/coupons').then((res) => setCoupons(res.data));
   useEffect(() => { load(); }, []);
 
   const submit = async (e) => {
     e.preventDefault();
-    await api.post('/coupons', form);
-    setForm(empty);
-    load();
+    setError('');
+    try {
+      await api.post('/coupons', form);
+      setForm(empty);
+      load();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not create the coupon. Please try again.');
+    }
   };
 
   const remove = async (id) => { await api.delete(`/coupons/${id}`); load(); };
@@ -22,6 +28,7 @@ export default function AdminCoupons() {
   return (
     <div>
       <h2>Coupons</h2>
+      {error && <p style={{ color: 'crimson' }}>{error}</p>}
       <form onSubmit={submit} className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
         <input className="input" placeholder="Code" required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} />
         <select className="input" value={form.discountType} onChange={(e) => setForm({ ...form, discountType: e.target.value })}>

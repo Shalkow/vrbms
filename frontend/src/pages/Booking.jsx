@@ -106,7 +106,7 @@ export default function Booking() {
         <div className="card">
           <h3>Step 3: Apply Coupon (optional)</h3>
           <input className="input" placeholder="Coupon code" value={form.couponCode}
-            onChange={(e) => setForm({ ...form, couponCode: e.target.value })} style={{ marginBottom: 14 }} />
+            onChange={(e) => setForm({ ...form, couponCode: e.target.value.toUpperCase() })} style={{ marginBottom: 14 }} />
           <button className="btn btn-outline" onClick={() => setStep(1)} style={{ marginRight: 10 }}>Back</button>
           <button className="btn btn-primary" onClick={getQuote}>Calculate Price</button>
         </div>
