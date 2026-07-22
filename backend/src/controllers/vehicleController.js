@@ -6,10 +6,10 @@ exports.searchVehicles = async (req, res, next) => {
   try {
     const {
       categoryId, locationId, fuelType, transmission, minSeats,
-      minPrice, maxPrice, sort, page = 1, limit = 12,
+      minPrice, maxPrice, sort, page = 1, limit = 12, includeInactive,
     } = req.query;
 
-    const where = { status: 'available' };
+    const where = includeInactive === 'true' ? {} : { status: 'available' };
     if (categoryId) where.categoryId = categoryId;
     if (locationId) where.locationId = locationId;
     if (fuelType) where.fuelType = fuelType;
@@ -108,8 +108,20 @@ exports.deleteVehicle = async (req, res, next) => {
 // POST /api/vehicles/:id/images (admin)
 exports.addImage = async (req, res, next) => {
   try {
-    const { imageUrl, isPrimary } = req.body;
-    const image = await VehicleImage.create({ vehicleId: req.params.id, imageUrl, isPrimary: !!isPrimary });
+    const vehicle = await Vehicle.findByPk(req.params.id);
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+
+    const imageUrl = req.file
+      ? `${req.protocol}://${req.get('host')}/uploads/vehicles/${req.file.filename}`
+      : req.body.imageUrl;
+    if (!imageUrl) return res.status(400).json({ message: 'Select an image to upload' });
+
+    const hasImages = await VehicleImage.count({ where: { vehicleId: vehicle.id } });
+    const isPrimary = req.body.isPrimary === 'true' || !hasImages;
+    if (isPrimary) await VehicleImage.update({ isPrimary: false }, { where: { vehicleId: vehicle.id } });
+
+    const image = await VehicleImage.create({ vehicleId: vehicle.id, imageUrl, isPrimary });
+    if (isPrimary) await vehicle.update({ thumbnail: imageUrl });
     res.status(201).json(image);
   } catch (err) {
     next(err);
@@ -119,8 +131,15 @@ exports.addImage = async (req, res, next) => {
 // POST /api/vehicles/:id/pricing (admin)
 exports.setPricing = async (req, res, next) => {
   try {
-    const pricing = await VehiclePricing.create({ vehicleId: req.params.id, ...req.body });
-    res.status(201).json(pricing);
+    const vehicle = await Vehicle.findByPk(req.params.id);
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+
+    const [pricing, created] = await VehiclePricing.findOrCreate({
+      where: { vehicleId: vehicle.id, pricingType: req.body.pricingType },
+      defaults: { vehicleId: vehicle.id, ...req.body },
+    });
+    if (!created) await pricing.update(req.body);
+    res.status(created ? 201 : 200).json(pricing);
   } catch (err) {
     next(err);
   }
