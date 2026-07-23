@@ -37,6 +37,7 @@ async function seed() {
     where: { vehicleNumber: 'MH15AB1234' },
     defaults: {
       name: 'Maruti Suzuki Swift',
+      ownerPhone: '7972360488',
       categoryId: categories['Car'].id,
       locationId: nashik.id,
       fuelType: 'Petrol',

@@ -24,7 +24,7 @@ exports.getQuote = async (req, res, next) => {
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
     if (vehicle.status !== 'available') return res.status(409).json({ message: 'Vehicle is not currently available' });
 
-    const { baseAmount, breakdown, appliedPricingType } = calculatePrice(vehicle.VehiclePricing, {
+    const { baseAmount, breakdown, appliedPricingType } = calculatePrice(vehicle.VehiclePricings, {
       pickupDateTime, returnDateTime, distanceKm,
     });
 
@@ -80,7 +80,7 @@ exports.createBooking = async (req, res, next) => {
       return res.status(400).json({ message: 'This vehicle does not support driver-included rentals' });
     }
 
-    const { baseAmount, breakdown } = calculatePrice(vehicle.VehiclePricing, {
+    const { baseAmount, breakdown } = calculatePrice(vehicle.VehiclePricings, {
       pickupDateTime, returnDateTime, distanceKm,
     });
 
@@ -168,26 +168,7 @@ exports.getBooking = async (req, res, next) => {
   }
 };
 
-// PATCH /api/bookings/:id/cancel - customer cancels (subject to cancellation policy)
-exports.cancelBooking = async (req, res, next) => {
-  try {
-    const booking = await Booking.findByPk(req.params.id);
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
-    if (booking.userId !== req.user.id) return res.status(403).json({ message: 'Forbidden' });
-    if (['completed', 'cancelled'].includes(booking.status)) {
-      return res.status(400).json({ message: `Booking already ${booking.status}` });
-    }
 
-    // TODO: apply real cancellation policy (e.g. % refund based on time-to-pickup) before go-live
-    await booking.update({ status: 'cancelled', cancellationReason: req.body.reason || 'Cancelled by customer' });
-    const vehicle = await Vehicle.findByPk(booking.vehicleId);
-    if (vehicle) await vehicle.update({ status: 'available' });
-
-    res.json(booking);
-  } catch (err) {
-    next(err);
-  }
-};
 
 // ---- Admin ----
 

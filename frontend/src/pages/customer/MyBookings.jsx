@@ -9,11 +9,7 @@ export default function MyBookings() {
   const load = () => api.get('/bookings/my').then((res) => setBookings(res.data));
   useEffect(() => { load(); }, []);
 
-  const cancel = async (id) => {
-    if (!confirm('Cancel this booking?')) return;
-    await api.patch(`/bookings/${id}/cancel`, { reason: 'Changed plans' });
-    load();
-  };
+ 
 
   return (
     <div className="container" style={{ padding: '30px 0' }}>
@@ -29,12 +25,15 @@ export default function MyBookings() {
               <p style={{ fontSize: 13 }}>Total: ₹{b.totalAmount}</p>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <span className={`badge ${statusBadge[b.status] || 'badge-pending'}`}>{b.status}</span>
-              {['pending', 'confirmed'].includes(b.status) && (
-                <button className="btn btn-outline" style={{ display: 'block', marginTop: 8 }} onClick={() => cancel(b.id)}>Cancel</button>
-              )}
+              <p style={{ fontSize: 13 }}>Total: ₹{b.totalAmount}</p>
+        {b.Vehicle?.ownerPhone && (
+          <p style={{ fontSize: 13, color: 'var(--muted)' }}>Vehicle contact: {b.Vehicle.ownerPhone}</p>
+        )}
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <span className={`badge ${statusBadge[b.status] || 'badge-pending'}`}>{b.status}</span>
+        </div>
             </div>
-          </div>
         ))}
         {bookings.length === 0 && <p style={{ color: 'var(--muted)' }}>No bookings yet.</p>}
       </div>

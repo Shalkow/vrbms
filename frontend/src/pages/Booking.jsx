@@ -9,10 +9,21 @@ export default function Booking() {
   const [vehicle, setVehicle] = useState(null);
   const [locations, setLocations] = useState([]);
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({
-    pickupDateTime: '', returnDateTime: '', pickupLocationId: '', dropLocationId: '',
-    rentalType: 'self_drive', couponCode: '', distanceKm: 0,
-  });
+  const PICKUP_TIME = '10:00';
+const [pickupDate, setPickupDate] = useState('');
+const [returnDate, setReturnDate] = useState('');
+const [form, setForm] = useState({
+  pickupDateTime: '', returnDateTime: '', pickupLocationId: '', dropLocationId: '',
+  rentalType: 'self_drive', couponCode: '', distanceKm: 0,
+});
+
+useEffect(() => {
+  setForm((f) => ({
+    ...f,
+    pickupDateTime: pickupDate ? `${pickupDate}T${PICKUP_TIME}` : '',
+    returnDateTime: returnDate ? `${returnDate}T${PICKUP_TIME}` : '',
+  }));
+}, [pickupDate, returnDate]);
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState('');
   const [booking, setBooking] = useState(null);
@@ -68,12 +79,18 @@ export default function Booking() {
       {step === 1 && (
         <div className="card">
           <h3>Step 1-2: Dates, Locations & Rental Type</h3>
-          <label>Pickup Date & Time</label>
-          <input className="input" type="datetime-local" value={form.pickupDateTime}
-            onChange={(e) => setForm({ ...form, pickupDateTime: e.target.value })} style={{ marginBottom: 10 }} />
-          <label>Return Date & Time</label>
-          <input className="input" type="datetime-local" value={form.returnDateTime}
-            onChange={(e) => setForm({ ...form, returnDateTime: e.target.value })} style={{ marginBottom: 10 }} />
+          <label>Pickup Date (10:00 AM)</label>
+<input className="input" type="date" value={pickupDate}
+  min={new Date().toISOString().slice(0, 10)}
+  onChange={(e) => {
+    setPickupDate(e.target.value);
+    if (returnDate && returnDate <= e.target.value) setReturnDate('');
+  }} style={{ marginBottom: 10 }} />
+<label>Return Date (10:00 AM)</label>
+<input className="input" type="date" value={returnDate}
+  min={pickupDate ? new Date(new Date(pickupDate).getTime() + 86400000).toISOString().slice(0, 10) : ''}
+  disabled={!pickupDate}
+  onChange={(e) => setReturnDate(e.target.value)} style={{ marginBottom: 10 }} />
           <label>Pickup Location</label>
           <select className="input" value={form.pickupLocationId}
             onChange={(e) => setForm({ ...form, pickupLocationId: e.target.value })} style={{ marginBottom: 10 }}>
@@ -147,8 +164,12 @@ export default function Booking() {
       {step === 5 && booking && (
         <div className="card">
           <h3>✅ Step 10: Booking Confirmed!</h3>
-          <p>Booking Code: <strong>{booking.bookingCode}</strong></p>
-          <p>Status: {booking.status}</p>
+<p>Booking Code: <strong>{booking.bookingCode}</strong></p>
+<p>Status: {booking.status}</p>
+{vehicle.ownerPhone && <p>Vehicle contact number: <strong>{vehicle.ownerPhone}</strong></p>}
+<p style={{ fontSize: 13, color: 'var(--muted)' }}>
+  A WhatsApp confirmation has been sent to you and to the vehicle's contact number.
+</p>
           <button className="btn btn-primary" onClick={() => navigate('/my-bookings')}>View My Bookings</button>
         </div>
       )}

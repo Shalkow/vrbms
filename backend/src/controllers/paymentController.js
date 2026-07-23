@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
-const { Payment, Booking, Invoice, Notification } = require('../models');
+const { Payment, Booking, Invoice, Notification, User, Vehicle } = require('../models');
+const { sendBookingConfirmationMessages } = require('../utils/whatsapp');
 
 /**
  * PAYMENT GATEWAY INTEGRATION POINT
@@ -66,14 +67,22 @@ exports.verifyPayment = async (req, res, next) => {
       });
 
       await Notification.create({
-        userId: booking.userId,
-        channel: 'email',
-        type: 'booking_confirmation',
-        message: `Your booking ${booking.bookingCode} is confirmed.`,
-        status: 'pending', // a queue/worker should pick this up and actually send it
-      });
+  userId: booking.userId,
+  channel: 'email',
+  type: 'booking_confirmation',
+  message: `Your booking ${booking.bookingCode} is confirmed.`,
+  status: 'pending',
+});
 
-      return res.json({ payment, booking, invoice });
+const [customer, vehicle] = await Promise.all([
+  User.findByPk(booking.userId),
+  Vehicle.findByPk(booking.vehicleId),
+]);
+sendBookingConfirmationMessages({ booking, vehicle, customer }).catch((err) =>
+  console.error('[whatsapp] Booking confirmation dispatch failed:', err.message)
+);
+
+return res.json({ payment, booking, invoice });
     }
 
     await Notification.create({

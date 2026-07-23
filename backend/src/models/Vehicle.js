@@ -4,6 +4,13 @@ const sequelize = require('../config/db');
 const Vehicle = sequelize.define('Vehicle', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
   name: { type: DataTypes.STRING, allowNull: false },
+vehicleNumber: { type: DataTypes.STRING, unique: true },
+ownerPhone: {
+  type: DataTypes.STRING,
+  allowNull: false,
+  defaultValue: '',
+  validate: { len: [10, 15] },
+},
   vehicleNumber: { type: DataTypes.STRING, unique: true },
   fuelType: { type: DataTypes.ENUM('Petrol', 'Diesel', 'CNG', 'Electric'), defaultValue: 'Petrol' },
   transmission: { type: DataTypes.ENUM('Manual', 'Automatic'), defaultValue: 'Manual' },

@@ -38,7 +38,7 @@ exports.searchVehicles = async (req, res, next) => {
     let rows = vehicles.rows;
     if (minPrice || maxPrice) {
       rows = rows.filter((v) => {
-        const rate = v.VehiclePricing?.[0]?.dailyRate;
+        const rate = v.VehiclePricings?.[0]?.dailyRate;
         if (rate == null) return true;
         if (minPrice && rate < minPrice) return false;
         if (maxPrice && rate > maxPrice) return false;

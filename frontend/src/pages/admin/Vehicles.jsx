@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../../api/axios';
 import { vehicleImageUrl } from '../../utils/vehicleImage';
 
-const empty = { name: '', vehicleNumber: '', categoryId: '', locationId: '', fuelType: 'Petrol', transmission: 'Manual', seats: 4, dailyRate: 1500 };
+const empty = { name: '', vehicleNumber: '', ownerPhone: '', categoryId: '', locationId: '', fuelType: 'Petrol', transmission: 'Manual', seats: 4, dailyRate: 1500 };
 const placeholderImage = 'https://placehold.co/96x64?text=Vehicle';
 
 export default function AdminVehicles() {
@@ -62,6 +62,7 @@ export default function AdminVehicles() {
     setForm({
       name: vehicle.name,
       vehicleNumber: vehicle.vehicleNumber,
+      ownerPhone: vehicle.ownerPhone || '',
       categoryId: String(vehicle.categoryId),
       locationId: String(vehicle.locationId),
       fuelType: vehicle.fuelType,
@@ -107,6 +108,9 @@ export default function AdminVehicles() {
           {error && <p style={{ gridColumn: '1 / -1', color: 'crimson', margin: 0 }}>{error}</p>}
           <input className="input" placeholder="Name" required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} />
           <input className="input" placeholder="Vehicle Number" required value={form.vehicleNumber} onChange={(event) => setForm({ ...form, vehicleNumber: event.target.value })} />
+<input className="input" type="tel" placeholder="Owner/Contact Phone Number" required pattern="[0-9]{10,15}"
+  title="Enter a valid phone number (digits only, 10-15 characters)"
+  value={form.ownerPhone} onChange={(event) => setForm({ ...form, ownerPhone: event.target.value })} />
           <select className="input" required value={form.categoryId} onChange={(event) => setForm({ ...form, categoryId: event.target.value })}>
             <option value="">Category</option>
             {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
