@@ -14,7 +14,7 @@ export default function VehicleDetail() {
 
   if (!vehicle) return <div className="container" style={{ padding: 40 }}>Loading...</div>;
 
-  const price = vehicle.VehiclePricing?.[0]?.dailyRate;
+  const price = vehicle.VehiclePricings?.[0]?.dailyRate;
   const image = vehicleImageUrl(vehicle.VehicleImages?.[0]?.imageUrl, 'https://placehold.co/700x400?text=Vehicle');
   let features = [];
   try { features = JSON.parse(vehicle.features || '[]'); } catch { /* ignore */ }

@@ -57,7 +57,7 @@ export default function AdminVehicles() {
   };
 
   const startEdit = (vehicle) => {
-    const dailyPricing = vehicle.VehiclePricing?.find((pricing) => pricing.pricingType === 'daily');
+    const dailyPricing = vehicle.VehiclePricings?.find((pricing) => pricing.pricingType === 'daily');
     const primaryImage = vehicle.VehicleImages?.find((image) => image.isPrimary) || vehicle.VehicleImages?.[0];
     setForm({
       name: vehicle.name,
@@ -134,7 +134,7 @@ export default function AdminVehicles() {
       <div className="grid" style={{ gap: 8 }}>
         {vehicles.map((vehicle) => {
           const image = vehicleImageUrl(vehicle.VehicleImages?.find((item) => item.isPrimary)?.imageUrl || vehicle.VehicleImages?.[0]?.imageUrl || vehicle.thumbnail, placeholderImage);
-          const dailyRate = vehicle.VehiclePricing?.find((pricing) => pricing.pricingType === 'daily')?.dailyRate;
+          const dailyRate = vehicle.VehiclePricings?.find((pricing) => pricing.pricingType === 'daily')?.dailyRate;
           return (
             <div key={vehicle.id} className="card flex-between">
               <div className="flex" style={{ gap: 12 }}>
