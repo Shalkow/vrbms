@@ -26,7 +26,23 @@ const app = express();
 app.set('trust proxy', 1);
 // ---- Security & core middleware ----
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: process.env.FRONTEND_URL || '*', credentials: true }));
+const allowedOriginPatterns = [
+  process.env.FRONTEND_URL,
+  /^https:\/\/vrbms.*\.vercel\.app$/,
+  /^http:\/\/localhost:\d+$/,
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow non-browser requests (no Origin header, e.g. curl/server-to-server)
+    if (!origin) return callback(null, true);
+    const isAllowed = allowedOriginPatterns.some((pattern) => (
+      pattern instanceof RegExp ? pattern.test(origin) : pattern === origin
+    ));
+    return isAllowed ? callback(null, true) : callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
