@@ -98,7 +98,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 /* ---- Responsive helpers ---- */
-.hide-mobile { display: initial; }
+.hide-mobile { }
 .show-mobile { display: none; }
 
 @media (max-width: 900px) {
