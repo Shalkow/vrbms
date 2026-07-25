@@ -30,13 +30,25 @@ export function AuthProvider({ children }) {
     return res.data.user;
   };
 
+  const requestOtp = async (phone) => {
+    const res = await api.post('/auth/otp-request', { phone });
+    return res.data; // { message, devOtp? } - devOtp only present while SMS is mocked
+  };
+
+  const verifyOtp = async (phone, otp, name) => {
+    const res = await api.post('/auth/otp-verify', { phone, otp, name });
+    localStorage.setItem('vrbms_token', res.data.token);
+    setUser(res.data.user);
+    return res.data.user;
+  };
+
   const logout = () => {
     localStorage.removeItem('vrbms_token');
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, requestOtp, verifyOtp, logout }}>
       {children}
     </AuthContext.Provider>
   );

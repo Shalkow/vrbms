@@ -18,6 +18,7 @@ const Invoice = require('./Invoice');
 const CmsPage = require('./CmsPage');
 const Setting = require('./Setting');
 const Log = require('./Log');
+const PhoneOtp = require('./PhoneOtp');
 
 // ---- Vehicle relationships ----
 VehicleCategory.hasMany(Vehicle, { foreignKey: 'categoryId' });
@@ -98,4 +99,5 @@ module.exports = {
   CmsPage,
   Setting,
   Log,
+  PhoneOtp,
 };

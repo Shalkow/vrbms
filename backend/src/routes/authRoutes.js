@@ -6,6 +6,7 @@ router.post('/register', ctrl.register);
 router.post('/login', ctrl.login);
 router.get('/me', protect, ctrl.me);
 router.post('/otp-request', ctrl.otpRequest);
+router.post('/otp-verify', ctrl.otpVerify);
 router.post('/google', ctrl.googleLogin);
 router.post('/forgot-password', ctrl.forgotPassword);
 
