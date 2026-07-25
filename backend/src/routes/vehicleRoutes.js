@@ -4,6 +4,7 @@ const { protect, authorize } = require('../middleware/auth');
 const upload = require('../middleware/vehicleImageUpload');
 
 router.get('/', ctrl.searchVehicles);
+router.get('/:id/availability', ctrl.checkAvailability);
 router.get('/:id', ctrl.getVehicle);
 router.post('/', protect, authorize('admin'), ctrl.createVehicle);
 router.put('/:id', protect, authorize('admin'), ctrl.updateVehicle);

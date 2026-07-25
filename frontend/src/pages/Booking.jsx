@@ -16,6 +16,7 @@ const [form, setForm] = useState({
   pickupDateTime: '', returnDateTime: '', pickupLocationId: '', dropLocationId: '',
   rentalType: 'self_drive', couponCode: '', distanceKm: 0,
 });
+const [availability, setAvailability] = useState({ checking: false, available: null, reason: '' });
 
 useEffect(() => {
   setForm((f) => ({
@@ -24,6 +25,26 @@ useEffect(() => {
     returnDateTime: returnDate ? `${returnDate}T${PICKUP_TIME}` : '',
   }));
 }, [pickupDate, returnDate]);
+
+// As soon as both dates are chosen, immediately check whether this vehicle is
+// already booked for that range - instead of only finding out several steps
+// later at the "Calculate Price" step.
+useEffect(() => {
+  if (!vehicleId || !form.pickupDateTime || !form.returnDateTime) {
+    setAvailability({ checking: false, available: null, reason: '' });
+    return;
+  }
+  let cancelled = false;
+  setAvailability({ checking: true, available: null, reason: '' });
+  api.get(`/vehicles/${vehicleId}/availability`, {
+    params: { pickupDateTime: form.pickupDateTime, returnDateTime: form.returnDateTime },
+  }).then((res) => {
+    if (!cancelled) setAvailability({ checking: false, available: res.data.available, reason: res.data.reason || '' });
+  }).catch(() => {
+    if (!cancelled) setAvailability({ checking: false, available: null, reason: '' });
+  });
+  return () => { cancelled = true; };
+}, [vehicleId, form.pickupDateTime, form.returnDateTime]);
   const [quote, setQuote] = useState(null);
   const [error, setError] = useState('');
   const [booking, setBooking] = useState(null);
@@ -90,7 +111,20 @@ useEffect(() => {
 <input className="input" type="date" value={returnDate}
   min={pickupDate ? new Date(new Date(pickupDate).getTime() + 86400000).toISOString().slice(0, 10) : ''}
   disabled={!pickupDate}
-  onChange={(e) => setReturnDate(e.target.value)} style={{ marginBottom: 10 }} />
+  onChange={(e) => setReturnDate(e.target.value)} style={{ marginBottom: 6 }} />
+{!pickupDate && <p style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 0, marginBottom: 10 }}>Choose a pick-up date first.</p>}
+
+{availability.checking && (
+  <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 10 }}>Checking availability for these dates…</p>
+)}
+{!availability.checking && availability.available === false && (
+  <div className="alert alert-danger" style={{ marginBottom: 10 }}>
+    This vehicle is not available for the selected dates{availability.reason ? ` — ${availability.reason}.` : '.'} Please choose different dates.
+  </div>
+)}
+{!availability.checking && availability.available === true && (
+  <p style={{ fontSize: 13, color: 'var(--success)', marginBottom: 10 }}>✓ Available for the selected dates</p>
+)}
           <label>Pickup Location</label>
           <select className="input" value={form.pickupLocationId}
             onChange={(e) => setForm({ ...form, pickupLocationId: e.target.value })} style={{ marginBottom: 10 }}>
@@ -113,7 +147,7 @@ useEffect(() => {
           <input className="input" type="number" value={form.distanceKm}
             onChange={(e) => setForm({ ...form, distanceKm: e.target.value })} style={{ marginBottom: 14 }} />
           <button className="btn btn-primary" onClick={() => setStep(2)}
-            disabled={!form.pickupDateTime || !form.returnDateTime}>
+            disabled={!form.pickupDateTime || !form.returnDateTime || availability.checking || availability.available === false}>
             Continue
           </button>
         </div>

@@ -108,8 +108,26 @@ export default function Home() {
             <option value="">Vehicle Type</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-          <input className="input" type="date" value={form.pickupDate} onChange={(e) => setForm({ ...form, pickupDate: e.target.value })} />
-          <input className="input" type="date" value={form.returnDate} onChange={(e) => setForm({ ...form, returnDate: e.target.value })} />
+          <input
+            className="input" type="date" placeholder="Pick-up date"
+            min={new Date().toISOString().slice(0, 10)}
+            value={form.pickupDate}
+            onChange={(e) => {
+              const newPickup = e.target.value;
+              setForm((f) => ({
+                ...f,
+                pickupDate: newPickup,
+                returnDate: f.returnDate && f.returnDate <= newPickup ? '' : f.returnDate,
+              }));
+            }}
+          />
+          <input
+            className="input" type="date" placeholder="Return date"
+            min={form.pickupDate ? new Date(new Date(form.pickupDate).getTime() + 86400000).toISOString().slice(0, 10) : ''}
+            disabled={!form.pickupDate}
+            value={form.returnDate}
+            onChange={(e) => setForm({ ...form, returnDate: e.target.value })}
+          />
           <select className="input" value={form.rentalType} onChange={(e) => setForm({ ...form, rentalType: e.target.value })}>
             <option value="self_drive">Self Drive</option>
             <option value="driver_included">Driver Included</option>

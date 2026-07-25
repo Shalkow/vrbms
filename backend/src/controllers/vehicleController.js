@@ -156,3 +156,26 @@ exports.setPricing = async (req, res, next) => {
     next(err);
   }
 };
+
+// GET /api/vehicles/:id/availability?pickupDateTime=...&returnDateTime=...
+// Lightweight check used by the booking flow to warn the customer immediately
+// if a vehicle is already booked for their chosen dates, before they go
+// through coupon/pricing steps.
+exports.checkAvailability = async (req, res, next) => {
+  try {
+    const { pickupDateTime, returnDateTime } = req.query;
+    if (!pickupDateTime || !returnDateTime) {
+      return res.status(400).json({ message: 'pickupDateTime and returnDateTime are required' });
+    }
+    const vehicle = await Vehicle.findByPk(req.params.id);
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+
+    if (vehicle.status !== 'available') {
+      return res.json({ available: false, reason: 'Vehicle is not currently available' });
+    }
+    const available = await isVehicleAvailableForRange(Booking, { vehicleId: vehicle.id, pickupDateTime, returnDateTime });
+    res.json({ available, reason: available ? null : 'Vehicle is already booked for the selected dates' });
+  } catch (err) {
+    next(err);
+  }
+};
