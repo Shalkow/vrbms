@@ -22,7 +22,7 @@ export default function Search() {
   }, [filters]);
 
   return (
-    <div className="container" style={{ padding: '30px 0', display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24 }}>
+    <div className="container search-layout" style={{ padding: '30px 0' }}>
       <aside className="card" style={{ height: 'fit-content' }}>
         <h3>Filters</h3>
         <label>Vehicle Type</label>

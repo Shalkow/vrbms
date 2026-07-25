@@ -25,7 +25,7 @@ export default function VehicleDetail() {
   };
 
   return (
-    <div className="container" style={{ padding: '30px 0', display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 24 }}>
+    <div className="container detail-layout" style={{ padding: '30px 0' }}>
       <div>
         <img src={image} alt={vehicle.name} style={{ width: '100%', borderRadius: 12, height: 360, objectFit: 'cover' }} />
         <h2 style={{ marginTop: 16 }}>{vehicle.name}</h2>
