@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { Vehicle, VehicleCategory, VehicleImage, VehiclePricing, Location, Review, Booking } = require('../models');
 const { isVehicleAvailableForRange } = require('../utils/availability');
+const { cloudinary, isCloudinaryConfigured } = require('../config/cloudinary');
 
 // GET /api/vehicles  (search + filter + sort)
 exports.searchVehicles = async (req, res, next) => {
@@ -117,15 +118,32 @@ exports.deleteVehicle = async (req, res, next) => {
   }
 };
 
+function uploadBufferToCloudinary(buffer) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'vrbms/vehicles' },
+      (error, result) => (error ? reject(error) : resolve(result)),
+    );
+    stream.end(buffer);
+  });
+}
+
 // POST /api/vehicles/:id/images (admin)
 exports.addImage = async (req, res, next) => {
   try {
     const vehicle = await Vehicle.findByPk(req.params.id);
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
 
-    const imageUrl = req.file
-      ? `/uploads/vehicles/${req.file.filename}`
-      : req.body.imageUrl;
+    let imageUrl = req.body.imageUrl;
+    if (req.file) {
+      if (!isCloudinaryConfigured()) {
+        return res.status(500).json({
+          message: 'Image storage is not configured yet. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.',
+        });
+      }
+      const uploaded = await uploadBufferToCloudinary(req.file.buffer);
+      imageUrl = uploaded.secure_url;
+    }
     if (!imageUrl) return res.status(400).json({ message: 'Select an image to upload' });
 
     const hasImages = await VehicleImage.count({ where: { vehicleId: vehicle.id } });

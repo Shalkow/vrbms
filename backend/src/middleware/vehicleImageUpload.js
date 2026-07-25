@@ -1,17 +1,9 @@
-const fs = require('fs');
-const path = require('path');
 const multer = require('multer');
 
-const uploadDirectory = path.join(__dirname, '../../uploads/vehicles');
-fs.mkdirSync(uploadDirectory, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: uploadDirectory,
-  filename: (req, file, callback) => {
-    const extension = path.extname(file.originalname).toLowerCase();
-    callback(null, `vehicle-${Date.now()}-${Math.round(Math.random() * 1e9)}${extension}`);
-  },
-});
+// Files are kept in memory (not written to local disk) and streamed straight
+// to Cloudinary in the controller - local disk on Railway is ephemeral and
+// gets wiped on every redeploy, which was silently breaking vehicle images.
+const storage = multer.memoryStorage();
 
 const imageFilter = (req, file, callback) => {
   if (file.mimetype.startsWith('image/')) return callback(null, true);
