@@ -15,9 +15,9 @@ export default function Navbar() {
 
   const links = (
     <>
-      <Link to="/search" onClick={() => setMenuOpen(false)}>Search</Link>
-      {user?.role === 'admin' && <Link to="/admin" onClick={() => setMenuOpen(false)}>Admin</Link>}
-      {user && user.role !== 'admin' && <Link to="/my-bookings" onClick={() => setMenuOpen(false)}>My Bookings</Link>}
+      <Link to="/search" className="nav-link" onClick={() => setMenuOpen(false)}>Search</Link>
+      {user?.role === 'admin' && <Link to="/admin" className="nav-link" onClick={() => setMenuOpen(false)}>Admin</Link>}
+      {user && user.role !== 'admin' && <Link to="/my-bookings" className="nav-link" onClick={() => setMenuOpen(false)}>My Bookings</Link>}
       {!user && <Link to="/login" className="btn btn-outline" onClick={() => setMenuOpen(false)}>Login</Link>}
       {user && (
         <button className="btn btn-outline" onClick={handleLogout}>
