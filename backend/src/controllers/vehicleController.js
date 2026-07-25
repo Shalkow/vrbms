@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
-const { Vehicle, VehicleCategory, VehicleImage, VehiclePricing, Location, Review } = require('../models');
+const { Vehicle, VehicleCategory, VehicleImage, VehiclePricing, Location, Review, Booking } = require('../models');
+const { isVehicleAvailableForRange } = require('../utils/availability');
 
 // GET /api/vehicles  (search + filter + sort)
 exports.searchVehicles = async (req, res, next) => {
@@ -7,6 +8,7 @@ exports.searchVehicles = async (req, res, next) => {
     const {
       categoryId, locationId, fuelType, transmission, minSeats,
       minPrice, maxPrice, sort, page = 1, limit = 12, includeInactive,
+      pickupDateTime, returnDateTime,
     } = req.query;
 
     const where = includeInactive === 'true' ? {} : { status: 'available' };
@@ -44,6 +46,16 @@ exports.searchVehicles = async (req, res, next) => {
         if (maxPrice && rate > maxPrice) return false;
         return true;
       });
+    }
+
+    // Optional date-range availability filter: only applied when both dates are
+    // given (e.g. from a "search available vehicles for these dates" form).
+    // Without dates, all admin-available vehicles are returned as before.
+    if (pickupDateTime && returnDateTime) {
+      const availabilityChecks = await Promise.all(
+        rows.map((v) => isVehicleAvailableForRange(Booking, { vehicleId: v.id, pickupDateTime, returnDateTime })),
+      );
+      rows = rows.filter((_, index) => availabilityChecks[index]);
     }
 
     res.json({ total: vehicles.count, page: parseInt(page), results: rows });

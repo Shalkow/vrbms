@@ -3,6 +3,7 @@ const {
   Booking, BookingItem, Vehicle, VehiclePricing, Coupon, CouponUsage, Location, Driver, Invoice,
 } = require('../models');
 const { calculatePrice, applyCoupon } = require('../utils/pricingEngine');
+const { isVehicleAvailableForRange } = require('../utils/availability');
 
 const TAX_RATE = 0.05; // 5% - adjust to match local GST/tax rules before go-live
 
@@ -23,6 +24,9 @@ exports.getQuote = async (req, res, next) => {
     });
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
     if (vehicle.status !== 'available') return res.status(409).json({ message: 'Vehicle is not currently available' });
+
+    const isFreeForQuote = await isVehicleAvailableForRange(Booking, { vehicleId, pickupDateTime, returnDateTime });
+    if (!isFreeForQuote) return res.status(409).json({ message: 'Vehicle is already booked for the selected dates' });
 
     const { baseAmount, breakdown, appliedPricingType } = calculatePrice(vehicle.VehiclePricings, {
       pickupDateTime, returnDateTime, distanceKm,
@@ -76,6 +80,9 @@ exports.createBooking = async (req, res, next) => {
     if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
     if (vehicle.status !== 'available') return res.status(409).json({ message: 'Vehicle is not currently available' });
 
+    const isFreeForBooking = await isVehicleAvailableForRange(Booking, { vehicleId, pickupDateTime, returnDateTime });
+    if (!isFreeForBooking) return res.status(409).json({ message: 'Vehicle is already booked for the selected dates' });
+
     if (rentalType === 'driver_included' && !vehicle.driverIncludedAvailable) {
       return res.status(400).json({ message: 'This vehicle does not support driver-included rentals' });
     }
@@ -128,8 +135,10 @@ exports.createBooking = async (req, res, next) => {
       await CouponUsage.create({ couponId: coupon.id, userId, bookingId: booking.id });
     }
 
-    // Mark vehicle as booked (a real system should use date-range availability, not a single status flag)
-    await vehicle.update({ status: 'booked' });
+    // NOTE: vehicle.status is admin-controlled only (available/maintenance/inactive).
+    // Per-booking availability is computed dynamically from active bookings' date
+    // ranges (see utils/availability.js), so the vehicle stays visible in listings
+    // for any dates outside this booking's range.
 
     const fullBooking = await Booking.findByPk(booking.id, { include: [BookingItem, Vehicle] });
     res.status(201).json(fullBooking);
@@ -194,11 +203,8 @@ exports.adminUpdateStatus = async (req, res, next) => {
     const booking = await Booking.findByPk(req.params.id);
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
     await booking.update({ status });
-
-    if (['completed', 'cancelled'].includes(status)) {
-      const vehicle = await Vehicle.findByPk(booking.vehicleId);
-      if (vehicle) await vehicle.update({ status: 'available' });
-    }
+    // Vehicle availability is derived from active booking date ranges, so marking
+    // this booking completed/cancelled automatically frees the vehicle - no status flip needed.
 
     res.json(booking);
   } catch (err) {
