@@ -14,7 +14,7 @@ const [pickupDate, setPickupDate] = useState('');
 const [returnDate, setReturnDate] = useState('');
 const [form, setForm] = useState({
   pickupDateTime: '', returnDateTime: '', pickupLocationId: '', dropLocationId: '',
-  rentalType: 'self_drive', couponCode: '', distanceKm: 0,
+  rentalType: 'self_drive', couponCode: '',
 });
 const [availability, setAvailability] = useState({ checking: false, available: null, reason: '' });
 
@@ -60,7 +60,7 @@ useEffect(() => {
     try {
       const res = await api.post('/bookings/quote', {
         vehicleId, pickupDateTime: form.pickupDateTime, returnDateTime: form.returnDateTime,
-        distanceKm: Number(form.distanceKm) || 0, couponCode: form.couponCode || undefined,
+        distanceKm: 0, couponCode: form.couponCode || undefined,
       });
       setQuote(res.data);
       setStep(3);
@@ -74,7 +74,7 @@ useEffect(() => {
     setError('');
     try {
       const res = await api.post('/bookings', {
-        vehicleId, ...form, distanceKm: Number(form.distanceKm) || 0,
+        vehicleId, ...form, distanceKm: 0,
       });
       setBooking(res.data);
 
@@ -127,25 +127,48 @@ useEffect(() => {
 )}
           <label>Pickup Location</label>
           <select className="input" value={form.pickupLocationId}
-            onChange={(e) => setForm({ ...form, pickupLocationId: e.target.value })} style={{ marginBottom: 10 }}>
+            onChange={(e) => {
+              const pickupLocationId = e.target.value;
+              setForm((f) => ({
+                ...f,
+                pickupLocationId,
+                // Self-drive rentals return to the same branch they were picked up from.
+                dropLocationId: f.rentalType === 'self_drive' ? pickupLocationId : f.dropLocationId,
+              }));
+            }} style={{ marginBottom: 10 }}>
             <option value="">Select</option>
             {locations.map((l) => <option key={l.id} value={l.id}>{l.city} - {l.branchName}</option>)}
           </select>
-          <label>Drop Location</label>
-          <select className="input" value={form.dropLocationId}
-            onChange={(e) => setForm({ ...form, dropLocationId: e.target.value })} style={{ marginBottom: 10 }}>
-            <option value="">Select</option>
-            {locations.map((l) => <option key={l.id} value={l.id}>{l.city} - {l.branchName}</option>)}
-          </select>
+
+          {form.rentalType === 'driver_included' ? (
+            <>
+              <label>Drop Location</label>
+              <select className="input" value={form.dropLocationId}
+                onChange={(e) => setForm({ ...form, dropLocationId: e.target.value })} style={{ marginBottom: 10 }}>
+                <option value="">Select</option>
+                {locations.map((l) => <option key={l.id} value={l.id}>{l.city} - {l.branchName}</option>)}
+              </select>
+            </>
+          ) : (
+            <p style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: -4, marginBottom: 10 }}>
+              Self-drive rentals are returned to the same pickup location.
+            </p>
+          )}
+
           <label>Rental Type</label>
           <select className="input" value={form.rentalType}
-            onChange={(e) => setForm({ ...form, rentalType: e.target.value })} style={{ marginBottom: 10 }}>
+            onChange={(e) => {
+              const rentalType = e.target.value;
+              setForm((f) => ({
+                ...f,
+                rentalType,
+                dropLocationId: rentalType === 'self_drive' ? f.pickupLocationId : f.dropLocationId,
+              }));
+            }} style={{ marginBottom: 14 }}>
             <option value="self_drive">Self Drive</option>
             {vehicle.driverIncludedAvailable && <option value="driver_included">Driver Included</option>}
           </select>
-          <label>Estimated Distance (km) — for per-km pricing</label>
-          <input className="input" type="number" value={form.distanceKm}
-            onChange={(e) => setForm({ ...form, distanceKm: e.target.value })} style={{ marginBottom: 14 }} />
+
           <button className="btn btn-primary" onClick={() => setStep(2)}
             disabled={!form.pickupDateTime || !form.returnDateTime || availability.checking || availability.available === false}>
             Continue
