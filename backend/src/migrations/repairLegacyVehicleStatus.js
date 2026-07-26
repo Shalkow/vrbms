@@ -1,98 +1,43 @@
-require('dotenv').config();
-const express = require('express');
-const path = require('path');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
+/**
+ * One-time (but safe-to-repeat) startup migration.
+ * ------------------------------------------------------------------
+ * Older versions of this app used to set vehicle.status = 'booked'
+ * whenever a booking was made. That's been removed - availability is
+ * now computed live from booking date ranges (see utils/availability.js),
+ * and vehicle.status only reflects admin-controlled state (available /
+ * maintenance / inactive).
+ *
+ * Any vehicle rows created before that fix may still be stuck with the
+ * old 'booked' value, which silently excludes them from every listing.
+ * This migration runs automatically on every server start and:
+ *   1. Converts any lingering 'booked' rows back to 'available'
+ *   2. Alters the schema so 'booked' is no longer a valid value at all -
+ *      making it structurally impossible for this bug to reappear,
+ *      regardless of how much data the app grows to.
+ *
+ * Both steps are idempotent - safe to run on every deploy, forever.
+ */
+async function repairLegacyVehicleStatus(sequelize) {
+  const [[{ count: staleCount }]] = await sequelize.query(
+    "SELECT COUNT(*) as count FROM vehicles WHERE status = 'booked'",
+  );
+  if (Number(staleCount) > 0) {
+    await sequelize.query("UPDATE vehicles SET status = 'available' WHERE status = 'booked'");
+    console.log(`[migration] Repaired ${staleCount} vehicle(s) stuck with legacy status='booked'.`);
+  } else {
+    console.log('[migration] No legacy status=\'booked\' vehicles found - nothing to repair.');
+  }
 
-const { sequelize } = require('./models');
-const errorHandler = require('./middleware/errorHandler');
-const { repairLegacyVehicleStatus } = require('./migrations/repairLegacyVehicleStatus');
-
-const authRoutes = require('./routes/authRoutes');
-const vehicleRoutes = require('./routes/vehicleRoutes');
-const bookingRoutes = require('./routes/bookingRoutes');
-const adminBookingRoutes = require('./routes/adminBookingRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-const couponRoutes = require('./routes/couponRoutes');
-const categoryRoutes = require('./routes/categoryRoutes');
-const locationRoutes = require('./routes/locationRoutes');
-const driverRoutes = require('./routes/driverRoutes');
-const reviewRoutes = require('./routes/reviewRoutes');
-const cmsRoutes = require('./routes/cmsRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-
-const app = express();
-app.set('trust proxy', 1);
-// ---- Security & core middleware ----
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-const allowedOriginPatterns = [
-  process.env.FRONTEND_URL,
-  /^https:\/\/vrbms.*\.vercel\.app$/,
-  /^http:\/\/localhost:\d+$/,
-].filter(Boolean);
-
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow non-browser requests (no Origin header, e.g. curl/server-to-server)
-    if (!origin) return callback(null, true);
-    const isAllowed = allowedOriginPatterns.some((pattern) => (
-      pattern instanceof RegExp ? pattern.test(origin) : pattern === origin
-    ));
-    return isAllowed ? callback(null, true) : callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-}));
-app.use(express.json({ limit: '2mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
-
-// Basic rate limiting - tune per-route limits before go-live (e.g. stricter on /auth)
-app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 300 }));
-
-// ---- Health check (use for uptime monitoring) ----
-app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
-
-// ---- Routes ----
-app.use('/api/auth', authRoutes);
-app.use('/api/vehicles', vehicleRoutes);
-app.use('/api/bookings', bookingRoutes);
-app.use('/api/admin/bookings', adminBookingRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/coupons', couponRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/locations', locationRoutes);
-app.use('/api/drivers', driverRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/cms', cmsRoutes);
-app.use('/api/admin', adminRoutes);
-
-app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
-app.use(errorHandler);
-
-const PORT = process.env.PORT || 5000;
-
-async function start() {
   try {
-    await sequelize.authenticate();
-    console.log('Database connected.');
-
-    // For production, replace `sync({ alter: true })` with proper migrations
-    // (sequelize-cli) so schema changes are reviewable and reversible.
-    await sequelize.sync({ alter: process.env.NODE_ENV === 'development' });
-    console.log('Models synced.');
-
-    await repairLegacyVehicleStatus(sequelize);
-
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    await sequelize.query(
+      "ALTER TABLE vehicles MODIFY status ENUM('available','maintenance','inactive') NOT NULL DEFAULT 'available'",
+    );
   } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
+    // Non-fatal: if this has already run, or the DB dialect doesn't
+    // support this exact syntax (e.g. during local sqlite testing),
+    // just log and continue - the data cleanup above already happened.
+    console.log('[migration] Skipped enum alteration (likely already applied or unsupported dialect):', err.message);
   }
 }
 
-start();
-
-module.exports = app;
+module.exports = { repairLegacyVehicleStatus };
