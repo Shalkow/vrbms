@@ -24,7 +24,7 @@ ownerPhone: {
   rcDetails: DataTypes.STRING,
   pollutionCertificate: DataTypes.STRING,
   features: DataTypes.TEXT, // JSON stringified array
-  status: { type: DataTypes.ENUM('available', 'booked', 'maintenance', 'inactive'), defaultValue: 'available' },
+  status: { type: DataTypes.ENUM('available', 'maintenance', 'inactive'), defaultValue: 'available' },
   thumbnail: DataTypes.STRING,
 }, { tableName: 'vehicles', timestamps: true });
 
